@@ -105,6 +105,10 @@ struct Args {
     /// Internal flag: run under the Windows Service Control Manager
     #[arg(long, hide = true)]
     service: bool,
+
+    /// Absorb any extra positional arguments (e.g. the service name passed by SCM)
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+    extra: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -178,7 +182,14 @@ fn main() {
         }
     }
 
-    setup_logging(args.verbose);
+    let log_file = if args.service {
+        env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("redirtor.log")))
+    } else {
+        None
+    };
+    setup_logging(args.verbose, log_file.as_deref());
 
     let config = match build_config(&args) {
         Ok(c) => c,
@@ -333,13 +344,31 @@ fn preprocess_args(args: Vec<String>) -> Vec<String> {
     out
 }
 
-fn setup_logging(verbose: bool) {
+fn setup_logging(verbose: bool, log_file: Option<&std::path::Path>) {
     let filter = if verbose { "debug" } else { "info" };
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::new(filter))
-        .with_target(false)
-        .with_thread_ids(false)
-        .init();
+    let env_filter = EnvFilter::new(filter);
+
+    if let Some(path) = log_file {
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .expect("failed to open log file");
+        let writer = std::sync::Mutex::new(file);
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .with_target(false)
+            .with_thread_ids(false)
+            .with_ansi(false)
+            .with_writer(writer)
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .with_target(false)
+            .with_thread_ids(false)
+            .init();
+    }
 }
 
 fn default_known_hosts_path() -> PathBuf {
