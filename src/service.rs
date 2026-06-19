@@ -47,7 +47,11 @@ pub fn install(args: &Args, raw_args: Vec<String>) -> Result<()> {
     let exe_str = exe.to_string_lossy();
 
     let service_args = build_service_args(raw_args);
-    let binary_path = format!("\"{}\" {}", exe_str, service_args.join(" "));
+    let binary_path = if exe_str.chars().any(|c| c == ' ' || c == '\t') {
+        format!("\"{}\" {}", exe_str, service_args.join(" "))
+    } else {
+        format!("{} {}", exe_str, service_args.join(" "))
+    };
 
     let service_info = ServiceInfo {
         name: OsString::from(&service_name),
