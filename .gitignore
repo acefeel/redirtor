@@ -1,0 +1,21 @@
+# Rust build artifacts
+/target
+
+# Local dev / IDE
+.DS_Store
+.env
+.vscode/
+.idea/
+*.swp
+
+# Compiled binaries and keys — never commit these
+*.exe
+*.dll
+*.key
+redirtor_relay
+redirtor_relay.pub
+*_relay
+*_relay.pub
+
+# Release artifacts built by CI
+/dist

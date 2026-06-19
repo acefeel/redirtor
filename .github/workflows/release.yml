@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build release binary
+        run: cargo build --release --target x86_64-pc-windows-msvc
+      - name: Package
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $name = "redirtor-${tag}-x86_64-pc-windows-msvc"
+          New-Item -ItemType Directory -Path "$name" | Out-Null
+          Copy-Item target/x86_64-pc-windows-msvc/release/redirtor.exe "$name/"
+          Copy-Item README.md "$name/"
+          Copy-Item LICENSE "$name/"
+          Compress-Archive -Path "$name" -DestinationPath "${name}.zip"
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: redirtor-*.zip
