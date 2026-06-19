@@ -137,15 +137,47 @@ To reach the Windows host where `redirtor` is running, set `-D 127.0.0.1` and
 
 ## Running unattended
 
-`redirtor` is a console application. To keep it running after logout, use one
-of these common Windows methods:
+`redirtor` is a console application. The easiest way to run it as a Windows
+service is with [nssm](https://nssm.cc/) (the Non-Sucking Service Manager).
 
-- **Task Scheduler** — create a task that runs at startup and whether the user
-  is logged on or not.
-- **nssm** (the Non-Sucking Service Manager) — wrap the console executable as a
-  Windows service.
-- **AlwaysUp**, **FireDaemon**, or similar service wrapper tools.
+### Example with nssm
 
+1. Download `nssm.exe` and place it in a directory on your `PATH`, e.g.
+   `C:\Windows\System32`.
+
+2. Install `redirtor` as a service:
+
+   ```powershell
+   nssm install redirtor C:\redirtor\redirtor.exe
+   ```
+
+   In the nssm GUI, set the **Arguments** to:
+
+   ```text
+   -S redirtor@59.110.69.114 -Sp 22 -p 4022 -D 192.168.0.51 -Dp 22 -k C:\redirtor\redirtor_relay
+   ```
+
+   Or install directly from the command line:
+
+   ```powershell
+   nssm install redirtor C:\redirtor\redirtor.exe "-S redirtor@59.110.69.114 -Sp 22 -p 4022 -D 192.168.0.51 -Dp 22 -k C:\redirtor\redirtor_relay"
+   nssm set redirtor DisplayName "redirtor tunnel"
+   nssm set redirtor Start SERVICE_AUTO_START
+   ```
+
+3. Start the service:
+
+   ```powershell
+   nssm start redirtor
+   ```
+
+4. View logs (nssm captures stdout/stderr by default):
+
+   ```powershell
+   nssm edit redirtor
+   ```
+
+Other alternatives include Windows Task Scheduler, AlwaysUp, or FireDaemon.
 Keep the private key file in a secure location and restrict its ACLs.
 
 ## Security notes
